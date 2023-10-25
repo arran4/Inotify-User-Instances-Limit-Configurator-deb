@@ -1,0 +1,62 @@
+name: Build and Release Debian Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Set Permissions for Configuration File
+      run: |
+        sudo chown root:root 11-max-user-instances.conf
+        sudo chmod 644 11-max-user-instances.conf
+      shell: bash
+
+    - name: Set up Build Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y debhelper # Install debhelper for building the .deb package
+      shell: bash
+
+    - name: Build Debian Package
+      run: |
+        # Create the necessary directory structure
+        mkdir -p inotify-configurator/DEBIAN
+        mkdir -p inotify-configurator/etc/sysctl.d
+
+        # Create the control file
+        cat << EOF > inotify-configurator/DEBIAN/control
+        Package: Inotify-User-Instances-Limit-Configurator
+        Version: ${{ github.ref }}
+        Section: base
+        Priority: optional
+        Architecture: all
+        Maintainer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        Description: Configuration file for inotify
+         This package includes the configuration file '11-max-user-instances.conf'
+        EOF
+
+        # Copy the configuration file to the package directory
+        cp 11-max-user-instances.conf inotify-configurator/etc/sysctl.d/
+
+        # Build the .deb package
+        dpkg-deb --build inotify-configurator
+
+        # Rename the .deb file with the appropriate version
+        mv inotify-configurator.deb "Inotify-User-Instances-Limit-Configurator-${{ github.ref }}.deb"
+      shell: bash
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./Inotify-User-Instances-Limit-Configurator-${{ github.ref }}.deb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
