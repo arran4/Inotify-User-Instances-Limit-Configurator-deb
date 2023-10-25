@@ -66,6 +66,6 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: ./Inotify-User-Instances-Limit-Configurator-${TAG_NAME}.deb
+        files: ./Inotify-User-Instances-Limit-Configurator-*.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
