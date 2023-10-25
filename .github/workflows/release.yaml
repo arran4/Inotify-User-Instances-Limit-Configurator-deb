@@ -25,16 +25,25 @@ jobs:
         sudo apt-get install -y debhelper # Install debhelper for building the .deb package
       shell: bash
 
+    - name: Get Tag Name
+      id: tag_name
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/tags/}
+      shell: bash
+
     - name: Build Debian Package
       run: |
         # Create the necessary directory structure
         mkdir -p inotify-configurator/DEBIAN
         mkdir -p inotify-configurator/etc/sysctl.d
 
+        # Get the tag name and remove the leading 'v' if it exists
+        TAG_NAME=${{ steps.tag_name.outputs.tag }}
+        TAG_NAME=${TAG_NAME#v}
+
         # Create the control file
         cat << EOF > inotify-configurator/DEBIAN/control
         Package: Inotify-User-Instances-Limit-Configurator
-        Version: ${{ github.ref }}
+        Version: $TAG_NAME
         Section: base
         Priority: optional
         Architecture: all
@@ -50,13 +59,13 @@ jobs:
         dpkg-deb --build inotify-configurator
 
         # Rename the .deb file with the appropriate version
-        mv inotify-configurator.deb "Inotify-User-Instances-Limit-Configurator-${{ github.ref }}.deb"
+        mv inotify-configurator.deb "Inotify-User-Instances-Limit-Configurator-${TAG_NAME}.deb"
       shell: bash
 
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: ./Inotify-User-Instances-Limit-Configurator-${{ github.ref }}.deb
+        files: ./Inotify-User-Instances-Limit-Configurator-${TAG_NAME}.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
